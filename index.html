@@ -1,0 +1,60 @@
+from flask import Flask, jsonify, render_template
+from flask_cors import CORS
+import pymysql
+
+app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+DB_CONFIG = {
+    "host": "192.168.121.100",
+    "user": "root",
+    "password": "123456",
+    "database": "order_analysis",
+    "charset": "utf8mb4",
+    "connect_timeout": 10
+}
+
+
+def query_db(sql):
+    conn = pymysql.connect(**DB_CONFIG)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+    cursor.execute(sql)
+    data = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return data
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+@app.route('/api/region_sales')
+def api_region_sales():
+    return jsonify(query_db("SELECT * FROM ads_region_sales ORDER BY amount_rank"))
+
+
+@app.route('/api/category_sales')
+def api_category_sales():
+    return jsonify(query_db("SELECT * FROM ads_category_sales ORDER BY amount_rank"))
+
+
+@app.route('/api/payment_analysis')
+def api_payment_analysis():
+    return jsonify(query_db("SELECT * FROM ads_payment_analysis ORDER BY total_orders DESC"))
+
+
+@app.route('/api/monthly_trend')
+def api_monthly_trend():
+    return jsonify(query_db("SELECT * FROM ads_monthly_trend ORDER BY order_yearmonth"))
+
+
+@app.route('/api/order_status')
+def api_order_status():
+    return jsonify(query_db("SELECT * FROM ads_order_status ORDER BY total_orders DESC"))
+
+
+if __name__ == '__main__':
+    print("Flask 订单分析服务启动")
+    app.run(debug=True, host='0.0.0.0', port=5000)
